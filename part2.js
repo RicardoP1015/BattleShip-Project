@@ -1,94 +1,90 @@
 const readline = require('readline-sync');
 
-let board = new Set();
-let strikes = new Set();
+let board = {
+    locations: new Set(),
+    ships: []
+};
 
-const valInputsOp = [ ['A1', 'A2', 'A3'], ['B1', 'B2', 'B3'], ['C1', 'C2', 'C3'], ['D1', 'D2', 'D3'], ['E1', 'E2', 'E3'], ['F1', 'F2', 'F3'], ['G1', 'G2', 'G3'], ['H1', 'H2', 'H3'], ['I1', 'I2', 'I3']];
-const validNumbers = [3,4,5,6,7,8,9,10];
-const valInputs = []
-const letterBoard = []; 
+let strikes = new Set();
+const letterBoard = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
 const numberBoard = [];
 
-const lettSize = (size) => {
-    const lettBoard = ['A', 'B', 'C', 'D', 'E', 'F', 'J', 'H', 'I'];
-    for (let i = 0; i < size; i++) {
-        if(i < lettBoard.length) {
-            letterBoard.push(lettBoard[i]);
-        } else {
-            console.log(`Size requested exceeds lettBoard length. Maximum size is ${lettBoard.length}`);
-            break;
-        };
-    };
+class Ship {
+    constructor(size) {
+        this.size = size;
+        this.positions = new Set();
+    }
+
+    isSunk() {
+        return this.positions.size === 0;
+    }
+}
+
+const generateBoardNumbers = (num) => {
+    for (let i = 1; i <= num; i++) {
+        numberBoard.push(i);
+    }
 };
 
-const validNum = (num) => {
-    if (validNumbers.includes(num)) {
-        numberBoard.push(num);
-    };
-};
-
-const boardSizeMaker = (size) => {
-    if (validNumbers.includes(size)) {
-        lettSize(size);
-        validNum(size);
-        validBoard(size);
-    } else {
-        console.log('Wrong input please pick a number from 3 to 10');
-        initGame();
-    };
+const generateShip = (size) => {
+    const ship = new Ship(size);
+    while (ship.positions.size < size) {
+        let location = generateLocation();
+        if (!board.locations.has(location)) {
+            board.locations.add(location);
+            ship.positions.add(location);
+        }
+    }
+    return ship;
 };
 
 const generateLocation = () => {
-    const letters = letterBoard;
-    let letter = letters[Math.floor(Math.random()*letters.length)];
-    let number = Math.floor(Math.random()*numberBoard.length) + 1;
+    let letter = letterBoard[Math.floor(Math.random() * letterBoard.length)];
+    let number = numberBoard[Math.floor(Math.random() * numberBoard.length)];
     return `${letter}${number}`;
 };
 
-const boardSize = (size) => {
-    for(let i = 0; i < size; i++) {
-        let location = generateLocation();
-        while (board.has(location)) {
-            location = generateLocation();
-        };
-        board.add(location);
-    };
-};
-
-const validBoard = (size) => {
-    for (let i = 0; i < size; i++) {
-        valInputs.push(...valInputsOp[i]);
-    };
-};
-
 const isValidInput = (input) => {
-    const validInputs = valInputs;
-    return validInputs.includes(input.toUpperCase());
+    const letter = input[0].toUpperCase();
+    const number = parseInt(input.slice(1));
+    return letterBoard.includes(letter) && numberBoard.includes(number);
 };
 
 const gameLoop = () => {
-    while(board.size > 0) {
+    while (board.ships.some(ship => !ship.isSunk())) {
         let strike = readline.question("Enter a location to strike ie 'A2': ");
-        while(!isValidInput(strike)) {
+        while (!isValidInput(strike)) {
             console.log("Wrong input, try again.");
             strike = readline.question("Enter a location to strike ie 'A2': ");
         };
-        if(strikes.has(strike)) {
+
+        if (strikes.has(strike)) {
             console.log("You have already picked this location. Miss!");
             continue;
         };
 
         strikes.add(strike);
-        
-        if(board.has(strike)) {
-            board.delete(strike);
-            console.log(`Hit. You have sunk a battleship. ${board.size} ship(s) remaining.`);
-        } else {
-            console.log("You have missed!");
+
+        let hitDetected = false;
+        for (let ship of board.ships) {
+            if (ship.positions.has(strike)) {
+                ship.positions.delete(strike);
+                hitDetected = true;
+                if (ship.isSunk()) {
+                    console.log(`Hit. You have sunk a battleship. ${board.ships.filter(ship => !ship.isSunk()).length} ship(s) remaining.`);
+                } else {
+                    console.log("Hit.");
+                };
+                break;
+            };
+        };
+
+        if (!hitDetected) {
+            console.log("You missed!");
         };
     };
 
-    if(readline.keyInYN("You have destroyed all battleships. Would you like to play again?")) {
+    if (readline.keyInYN("You have destroyed all battleships. Would you like to play again?")) {
         initGame();
     } else {
         console.log("Thanks for playing!");
@@ -97,12 +93,40 @@ const gameLoop = () => {
 };
 
 const initGame = () => {
-    board.clear();
-    strikes.clear();
-    let size = readline.question('Enter the size of the board: ');
+    let size = readline.question('Enter the size of the board (3-10): ');
     size = parseInt(size);
-    boardSizeMaker(size);
-    boardSize(size);
+
+    if (size < 3 || size > 10) {
+        console.log("Wrong input, please choose a number between 3 and 10");
+        initGame();
+    };
+
+    board.locations.clear();
+    strikes.clear();
+    numberBoard.length = 0;
+
+    generateBoardNumbers(size);
+    letterBoard.splice(size);
+
+    switch (size) {
+        case 3:
+            board.ships.push(generateShip(2), generateShip(2));
+            break;
+        case 4:
+        case 5:
+        case 6:
+            board.ships.push(generateShip(2), generateShip(2), generateShip(2));
+            break;
+        case 7:
+        case 8:
+            board.ships.push(generateShip(1), generateShip(2), generateShip(2), generateShip(3));
+            break;
+        case 9:
+        case 10:
+            board.ships.push(generateShip(2), generateShip(3), generateShip(3), generateShip(4), generateShip(5));
+            break;
+    }
+
     readline.question('Press any key to start the game.');
     gameLoop();
 };
