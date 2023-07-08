@@ -57,5 +57,5 @@ function initGame() {
     gameLoop();
 };
 
-
+// Kick off the game
 initGame();
