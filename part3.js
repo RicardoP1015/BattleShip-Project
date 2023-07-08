@@ -24,7 +24,7 @@ class Ship {
 const generateBoardNumbers = (num) => {
     for (let i = 1; i <= num; i++) {
         numberBoard.push(i);
-    }
+    };
 };
 
 const initializeGameBoard = (size) => {
@@ -33,13 +33,42 @@ const initializeGameBoard = (size) => {
 
 const generateShip = (size) => {
     const ship = new Ship(size);
-    while (ship.positions.size < size) {
-        let location = generateLocation();
-        if (!board.locations.has(location)) {
-            board.locations.add(location);
-            ship.positions.add(location);
-        }
+    let startLocation;
+    let direction;
+
+    do {
+        startLocation = generateLocation();
+        direction = Math.floor(Math.random() * 2);
+
+        let startLetterIndex = letterBoard.indexOf(startLocation[0]);
+        let startNumberIndex = numberBoard.indexOf(parseInt(startLocation.slice(1)));
+
+        if (direction === 0 && startNumberIndex + size > numberBoard.length) continue;
+        if (direction === 1 && startLetterIndex + size > letterBoard.length) continue;
+
+        for (let i = 0; i < size; i++) {
+            let position;
+
+            if (direction === 0) {
+                position = startLocation[0] + (parseInt(startLocation.slice(1)) + i);
+            } else {
+                position = letterBoard[startLetterIndex + i] + startLocation.slice(1);
+            };
+
+            if (!board.locations.has(position)) {
+                ship.positions.add(position);
+            } else {
+                ship.positions.clear();
+                break;
+            };
+        };
+
+    } while (ship.positions.size < size);
+
+    for (let position of ship.positions) {
+        board.locations.add(position);
     }
+
     return ship;
 };
 
@@ -51,13 +80,13 @@ const generateLocation = () => {
 
 const isValidInput = (input) => {
     const letter = input[0].toUpperCase();
-    const number = parseInt(input.substring(1));
+    const number = parseInt(input.slice(1, input.length));
     return letterBoard.includes(letter) && numberBoard.includes(number);
 };
 
 const updateGameBoard = (strike, isHit) => {
     const letterIndex = letterBoard.indexOf(strike[0].toUpperCase());
-    const numberIndex = parseInt(strike.substring(1)) - 1;
+    const numberIndex = parseInt(strike.slice(1, strike.length)) - 1;
     gameBoard[letterIndex][numberIndex] = isHit ? 'X' : 'O';
 };
 
@@ -94,7 +123,6 @@ const gameLoop = () => {
                 } else {
                     console.log("Hit.");
                 };
-
                 break;
             };
         };
@@ -105,6 +133,8 @@ const gameLoop = () => {
 
         updateGameBoard(strike, hitDetected);
     };
+
+    printGameBoard();
 
     if (readline.keyInYN("You have destroyed all battleships. Would you like to play again?")) {
         initGame();
@@ -130,7 +160,7 @@ const initGame = () => {
     letterBoard.length = 0;
 
     generateBoardNumbers(size);
-    for(let i = 0; i < size; i++) {
+    for (let i = 0; i < size; i++) {
         letterBoard.push(String.fromCharCode(65 + i));
     };
 
@@ -138,20 +168,20 @@ const initGame = () => {
 
     switch (size) {
         case 3:
-            board.ships.push(generateShip(2), generateShip(2));
+            board.ships.push(generateShip(1), generateShip(1), generateShip(1));
             break;
         case 4:
         case 5:
         case 6:
-            board.ships.push(generateShip(2), generateShip(2), generateShip(2));
+            board.ships.push(generateShip(2), generateShip(2), generateShip(2), generateShip(2));
             break;
         case 7:
         case 8:
-            board.ships.push(generateShip(2), generateShip(2), generateShip(3));
+            board.ships.push(generateShip(2), generateShip(2), generateShip(3), generateShip(3));
             break;
         case 9:
         case 10:
-            board.ships.push(generateShip(2), generateShip(3), generateShip(3), generateShip(4), generateShip(5));
+            board.ships.push(generateShip(1), generateShip(2), generateShip(3), generateShip(3), generateShip(4), generateShip(5));
             break;
     };
 

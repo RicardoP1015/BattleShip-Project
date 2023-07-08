@@ -28,15 +28,45 @@ const generateBoardNumbers = (num) => {
 
 const generateShip = (size) => {
     const ship = new Ship(size);
-    while (ship.positions.size < size) {
-        let location = generateLocation();
-        if (!board.locations.has(location)) {
-            board.locations.add(location);
-            ship.positions.add(location);
+    let startLocation;
+    let direction;
+
+    do {
+        startLocation = generateLocation();
+        direction = Math.floor(Math.random() * 2);
+
+        let startLetterIndex = letterBoard.indexOf(startLocation[0]);
+        let startNumberIndex = numberBoard.indexOf(parseInt(startLocation.slice(1)));
+
+        if (direction === 0 && startNumberIndex + size > numberBoard.length) continue;
+        if (direction === 1 && startLetterIndex + size > letterBoard.length) continue;
+
+        for (let i = 0; i < size; i++) {
+            let position;
+
+            if (direction === 0) {
+                position = startLocation[0] + (parseInt(startLocation.slice(1)) + i);
+            } else {
+                position = letterBoard[startLetterIndex + i] + startLocation.slice(1);
+            };
+
+            if (!board.locations.has(position)) {
+                ship.positions.add(position);
+            } else {
+                ship.positions.clear();
+                break;
+            };
         };
-    };
+
+    } while (ship.positions.size < size);
+
+    for (let position of ship.positions) {
+        board.locations.add(position);
+    }
+
     return ship;
 };
+
 
 const generateLocation = () => {
     let letter = letterBoard[Math.floor(Math.random() * letterBoard.length)];
@@ -46,7 +76,7 @@ const generateLocation = () => {
 
 const isValidInput = (input) => {
     const letter = input[0].toUpperCase();
-    const number = parseInt(input.slice(1));
+    const number = parseInt(input.slice(1, input.length));
     return letterBoard.includes(letter) && numberBoard.includes(number);
 };
 
@@ -96,36 +126,41 @@ const initGame = () => {
     let size = readline.question('Enter the size of the board (3-10): ');
     size = parseInt(size);
 
-    if (size < 3 || size > 10) {
-        console.log("Wrong input, please choose a number between 3 and 10");
-        initGame();
+    while (isNaN(size) || size < 3 || size > 10) {
+        console.log("Invalid input, please choose a number between 3 and 10");
+        size = readline.question('Enter the size of the board (3-10): ');
+        size = parseInt(size);
     };
 
     board.locations.clear();
     strikes.clear();
     numberBoard.length = 0;
+    letterBoard.length = 0;
 
     generateBoardNumbers(size);
-    letterBoard.splice(size);
+    for (let i = 0; i < size; i++) {
+        letterBoard.push(String.fromCharCode(65 + i));
+    };
+
 
     switch (size) {
         case 3:
-            board.ships.push(generateShip(2), generateShip(2));
+            board.ships.push(generateShip(1), generateShip(1), generateShip(1));
             break;
         case 4:
         case 5:
         case 6:
-            board.ships.push(generateShip(2), generateShip(2), generateShip(2));
+            board.ships.push(generateShip(2), generateShip(2), generateShip(2), generateShip(2));
             break;
         case 7:
         case 8:
-            board.ships.push(generateShip(2), generateShip(2), generateShip(), generateShip(3));
+            board.ships.push(generateShip(2), generateShip(2), generateShip(3), generateShip(3));
             break;
         case 9:
         case 10:
-            board.ships.push(generateShip(2), generateShip(3), generateShip(3), generateShip(4), generateShip(5));
+            board.ships.push(generateShip(1), generateShip(2), generateShip(3), generateShip(3), generateShip(4), generateShip(5));
             break;
-    }
+    };
 
     readline.question('Press any key to start the game.');
     gameLoop();
